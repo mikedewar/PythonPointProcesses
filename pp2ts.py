@@ -2,7 +2,7 @@ import numpy as np
 import datetime as dt
 import pandas
 from scipy.stats import kde
-#from scipy.special import gamma
+from scipy.special import gamma
 
 
 class Method(object):
@@ -86,10 +86,30 @@ class MovingAverage(Method):
                     y.append(1./self.w)
             return sum(y)
         
-        out = np.array([window(t - self.pp[self.pp < t]) for t in sample_times], dtype=float)
+        out = np.array([
+            window(t - self.pp[self.pp < t]) 
+            for t in sample_times
+        ], dtype=float)
         out = out * (len(self.pp)/sum(out)) 
         return out
-            
+
+class GammaWindow(Method):
+    
+    def __init__(self, pp, theta=2.0, k=2.0):
+        Method.__init__(self, pp)
+        self.theta = theta
+        self.k = k
+    
+    def sample(self, sample_times):
+        den = gamma(self.k) * (self.theta**self.k)
+        clicks = self.pp
+        times = np.array(sample_times)
+        clicks.shape = (len(clicks), 1)
+        delta = times - clicks
+        delta[delta < 0] = 0
+        return sum((delta)**(self.k-1)*np.exp(-(delta)/self.theta) / den, 0)
+        
+
 
 def pp2ts(pp, method=Kernel, period=1, t0=None, N=None, **kwargs):
     """
@@ -145,11 +165,13 @@ if __name__ == "__main__":
     kde_series = pp2ts(clicks, Kernel, period = T)
     ma_series_2m = pp2ts(clicks, MovingAverage, period = T, w=2*60)
     ma_series_1h = pp2ts(clicks, MovingAverage, period = T, w=60*60)
+    gamma_series = pp2ts(clicks, GammaWindow, period=T)
     
     binned_series.plot(label="bins")
     kde_series.plot(label="kde")
     ma_series_2m.plot(label="2m moving average")
     ma_series_1h.plot(label="1h moving average")
+    gamma_series.plot(label="gamma window")
     
     plt.plot([dt.datetime.fromtimestamp(c) for c in clicks], [0 for i in clicks], 'kx')
 

@@ -31,19 +31,16 @@ def pp2ts(pp, period=1, t0=None, N=None, **kwargs):
     estimate the rate of a point process, returning the result as a pandas TimeSeries
     
     pp : list
-        point process as a list of timestamps
+        point process as a list of unix timestamps
         
     period: float
-        time in seconds between samples
-    
-    method : Method object
-        conversion method
+        time in seconds between output samples
     
     t0 : timestamp
-        initial time
+        initial time (optional) to generate output samples
     
     N : int
-        number of samples to generate (optional)
+        number of output samples to generate (optional)
     
     Returns
     
@@ -60,7 +57,7 @@ def pp2ts(pp, period=1, t0=None, N=None, **kwargs):
     # bulid model
     model = Kernel(pp, **kwargs)
     # create sampletimes
-    sample_times = range(t0, period*N, period)
+    sample_times = range(t0, t0+period*N, period)
     # sample
     samples = model.sample(sample_times)
     # form Time Series
